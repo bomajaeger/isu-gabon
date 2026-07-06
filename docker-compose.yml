@@ -1,0 +1,54 @@
+services:
+  # --- PHP-FPM (application Laravel) ---
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: isu-gabon
+    container_name: isu-gabon-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - isu-network
+    depends_on:
+      - db
+
+  # --- Nginx (serveur web) ---
+  nginx:
+    image: nginx:alpine
+    container_name: isu-gabon-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - isu-network
+    depends_on:
+      - app
+
+  # --- MySQL (base de données) ---
+  db:
+    image: mysql:8.0
+    container_name: isu-gabon-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - isu-network
+
+networks:
+  isu-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
